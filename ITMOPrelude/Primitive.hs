@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module ITMOPrelude.Primitive where
 
-import Prelude (Show,Read)
+import Prelude (Show, Read, error)
 
 ---------------------------------------------
 -- Синтаксис лямбда-выражений
@@ -83,10 +83,19 @@ data Nat = Zero | Succ Nat deriving (Show,Read)
 
 natZero = Zero     -- 0
 natOne = Succ Zero -- 1
+one = natOne
+two = Succ one
+three = Succ two
+four = Succ three
+five = Succ four
+six = Succ five
 
 -- Сравнивает два натуральных числа
 natCmp :: Nat -> Nat -> Tri
-natCmp = undefined
+natCmp Zero Zero = EQ
+natCmp Zero (Succ _) = LT
+natCmp (Succ _) Zero = GT
+natCmp (Succ n) (Succ m) = natCmp n m
 
 -- n совпадает с m 
 natEq :: Nat -> Nat -> Bool
@@ -111,7 +120,9 @@ Zero     +. m = m
 infixl 6 -.
 -- Вычитание для натуральных чисел
 (-.) :: Nat -> Nat -> Nat
-n -. m = undefined
+Zero -. _ = Zero
+n -. Zero = n
+(Succ n) -. Succ(m) = n -. m
 
 infixl 7 *.
 -- Умножение для натуральных чисел
@@ -121,14 +132,22 @@ Zero     *. m = Zero
 
 -- Целое и остаток от деления n на m
 natDivMod :: Nat -> Nat -> Pair Nat Nat
-natDivMod n m = undefined
+natDivMod _ Zero = error "Division by zero"
+natDivMod n m = let order = n `natCmp` m in
+    case order of LT -> Pair Zero n
+                  _  ->Pair div mod
+                 where diff = n -. m
+                       Pair prevDiv mod = diff `natDivMod` m
+                       div = natOne +. prevDiv
 
 natDiv n = fst . natDivMod n -- Целое
 natMod n = snd . natDivMod n -- Остаток
 
 -- Поиск GCD алгоритмом Евклида (должен занимать 2 (вычислителельная часть) + 1 (тип) строчки)
 gcd :: Nat -> Nat -> Nat
-gcd = undefined
+gcd Zero n = n
+gcd n Zero = n
+gcd n m = (gcd m (n `natMod` m))
 
 -------------------------------------------
 -- Целые числа

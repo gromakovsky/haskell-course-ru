@@ -83,12 +83,16 @@ data Nat = Zero | Succ Nat deriving (Show,Read)
 
 natZero = Zero     -- 0
 natOne = Succ Zero -- 1
-one = natOne
-two = Succ one
-three = Succ two
-four = Succ three
-five = Succ four
-six = Succ five
+natTwo = Succ natOne
+natThree = Succ natTwo
+natFour = Succ natThree
+natFive = Succ natFour
+natSix = Succ natFive
+
+-- -1
+prev :: Nat -> Nat
+prev Zero     = Zero
+prev (Succ n) = n
 
 -- Сравнивает два натуральных числа
 natCmp :: Nat -> Nat -> Tri
@@ -152,70 +156,110 @@ gcd n m = (gcd m (n `natMod` m))
 -- Целые числа
 
 -- Требуется, чтобы представление каждого числа было единственным
-data Int = UNDEFINED deriving (Show,Read)
+data Int = Pos Nat | Neg Nat deriving (Show,Read)
 
-intZero   = undefined   -- 0
-intOne    = undefined     -- 1
-intNegOne = undefined -- -1
+intZero   = Pos natZero -- 0
+intOne    = Pos natOne  -- 1
+intNegOne = Neg natZero -- -1
 
 -- n -> - n
 intNeg :: Int -> Int
-intNeg = undefined
+intNeg (Pos Zero) = intZero
+intNeg (Neg n) = Pos (Succ n)
+intNeg (Pos n) = Neg (prev n)
 
 -- Дальше также как для натуральных
 intCmp :: Int -> Int -> Tri
-intCmp = undefined
+intCmp (Pos _) (Neg _) = GT
+intCmp (Neg _) (Pos _) = LT
+intCmp (Pos a) (Pos b) = a `natCmp` b
+intCmp (Neg a) (Neg b) = b `natCmp` a
 
 intEq :: Int -> Int -> Bool
-intEq = undefined
+intEq a b = case order of EQ -> True
+                          _ -> False
+                          where order = intCmp a b
 
 intLt :: Int -> Int -> Bool
-intLt = undefined
+intLt a b = case order of LT -> True
+                          _ -> False
+                          where order = intCmp a b
 
 infixl 6 .+., .-.
 -- У меня это единственный страшный терм во всём файле
 (.+.) :: Int -> Int -> Int
-n .+. m = undefined
+(Pos a) .+. (Pos b) = Pos (a +. b)
+(Pos a) .+. (Neg b) = case order of LT -> Neg $ prev (b -. a)
+                                    EQ -> intNegOne
+                                    GT -> Pos $ prev (a -. b)
+                                    where order = natCmp a b
+a@(Neg _) .+. b@(Pos _) = b .+. a
+a .+. b = intNeg $ intNeg a .+. intNeg b
 
 (.-.) :: Int -> Int -> Int
 n .-. m = n .+. (intNeg m)
 
 infixl 7 .*.
 (.*.) :: Int -> Int -> Int
-n .*. m = undefined
+Pos a .*. Pos b = Pos $ a *. b
+a@(Neg _) .*. b@(Pos _) = intNeg $ intNeg a .*. b
+a@(Pos _) .*. b@(Neg _) = intNeg $ a .*. intNeg b
+n .*. m = intNeg n .*. intNeg m
+
+asNat :: Int -> Nat
+asNat (Neg _) = error "Negative numbers can't be Nat"
+asNat (Pos a) = a
+
+-- Модуль
+intAbs :: Int -> Nat
+intAbs (Pos a) = a
+intAbs n = asNat $ intNeg n
 
 -------------------------------------------
 -- Рациональные числа
 
-data Rat = Rat Int Nat
+data Rat = Rat Int Nat deriving (Show,Read)
+
+ratZero = Rat intZero natSix
+ratZero' = Rat intZero natFive
+ratHalf = Rat intOne natTwo
+ratNegHalf = Rat intNegOne natTwo
+ratOne = Rat intOne natOne
+ratNegOne = Rat intNegOne natOne
 
 ratNeg :: Rat -> Rat
 ratNeg (Rat x y) = Rat (intNeg x) y
 
 -- У рациональных ещё есть обратные элементы
 ratInv :: Rat -> Rat
-ratInv = undefined
+ratInv (Rat (Pos Zero) _) = error "Zero does not have inverse"
+ratInv (Rat (Pos n) m) = Rat (Pos m) n
+ratInv (Rat n m) = ratNeg . ratInv $ Rat (intNeg n) m
 
 -- Дальше как обычно
 ratCmp :: Rat -> Rat -> Tri
-ratCmp = undefined
+ratCmp (Rat a b) (Rat c d) = intCmp (a .*. Pos d) (c .*. Pos b)
 
 ratEq :: Rat -> Rat -> Bool
-ratEq = undefined
+ratEq a b = case order of EQ -> True
+                          _ -> False
+                          where order = ratCmp a b
 
 ratLt :: Rat -> Rat -> Bool
-ratLt = undefined
+ratLt a b = case order of LT -> True
+                          _ -> False
+                          where order = ratCmp a b
 
 infixl 7 %+, %-
 (%+) :: Rat -> Rat -> Rat
-n %+ m = undefined
+Rat a b %+ Rat c d = Rat (a .*. Pos d .+. c .*. Pos b) (b *. d)
 
 (%-) :: Rat -> Rat -> Rat
 n %- m = n %+ (ratNeg m)
 
 infixl 7 %*, %/
 (%*) :: Rat -> Rat -> Rat
-n %* m = undefined
+Rat a b %* Rat c d = Rat (a .*. c) (b *. d)
 
 (%/) :: Rat -> Rat -> Rat
 n %/ m = n %* (ratInv m)
@@ -238,3 +282,4 @@ example3'' a b c = ($) (gcd a) (gcd b c)
 -- И ещё эквивалентные определения
 example4  a b x = (gcd a (gcd b x))
 example4' a b = gcd a . gcd b
+

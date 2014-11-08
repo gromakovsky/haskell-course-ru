@@ -145,7 +145,6 @@ natMod n = snd . natDivMod n -- Остаток
 
 -- Поиск GCD алгоритмом Евклида (должен занимать 2 (вычислителельная часть) + 1 (тип) строчки)
 gcd :: Nat -> Nat -> Nat
-gcd Zero n = n
 gcd n Zero = n
 gcd n m = (gcd m (n `natMod` m))
 

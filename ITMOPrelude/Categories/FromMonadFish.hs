@@ -7,13 +7,17 @@ import ITMOPrelude.Categories
 import ITMOPrelude.Categories.MonadJoin
 
 -- делаем из нас
-instance MonadFish m => Monad where
-    return = ?
-    f >>= g = ?
+
+import ITMOPrelude.Primitive
+
+instance MonadFish m => Monad m where
+    return  = returnFish
+    a >>= f = (\a -> a) >=> f $ a
 
 instance MonadFish m => Functor m where
-    fmap = ?
+    fmap f a = (\a -> a) >=> (\a -> returnFish $ f a) $ a
 
 instance MonadFish m => MonadJoin m where
-    returnJoin = ?
-    join = ?
+    returnJoin  = returnFish
+    join x      = (\a -> a) >=> (\a -> a) $ x
+

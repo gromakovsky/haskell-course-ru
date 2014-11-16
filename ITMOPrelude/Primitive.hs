@@ -103,17 +103,15 @@ natCmp (Succ n) (Succ m) = natCmp n m
 
 -- n совпадает с m 
 natEq :: Nat -> Nat -> Bool
-natEq Zero     Zero     = True
-natEq Zero     (Succ _) = False
-natEq (Succ _) Zero     = False
-natEq (Succ n) (Succ m) = natEq n m
+natEq a b = case cmp of EQ -> True
+                        _  -> False
+            where cmp = a `natCmp` b
 
 -- n меньше m
 natLt :: Nat -> Nat -> Bool
-natLt Zero     Zero     = False
-natLt Zero     (Succ m) = True
-natLt (Succ n) Zero     = False
-natLt (Succ n) (Succ m) = natLt n m
+natLt a b = case cmp of LT -> True
+                        _  -> False
+            where cmp = a `natCmp` b
 
 infixl 6 +.
 -- Сложение для натуральных чисел
@@ -150,7 +148,7 @@ natMod n = snd . natDivMod n -- Остаток
 -- Поиск GCD алгоритмом Евклида (должен занимать 2 (вычислителельная часть) + 1 (тип) строчки)
 gcd :: Nat -> Nat -> Nat
 gcd n Zero = n
-gcd n m = (gcd m (n `natMod` m))
+gcd n m    = gcd m (n `natMod` m)
 
 -------------------------------------------
 -- Целые числа

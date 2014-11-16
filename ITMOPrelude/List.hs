@@ -15,7 +15,7 @@ import ITMOPrelude.Primitive
 
 data List a = Nil |  Cons a (List a) deriving (Show,Read)
 
-testList = Cons natOne (Cons natTwo (Cons natFour (Cons natZero Nil)))
+testList = Cons natOne $ Cons natTwo $ Cons natFour $ Cons natZero Nil
 ---------------------------------------------
 -- Операции
 
@@ -89,8 +89,8 @@ takeWhile p (Cons x xs) = if' (p x) (Cons x $ takeWhile p xs) Nil
 -- после чего скопировать все элементы, включая первый нарушивший
 -- dropWhile (< 3) [1,2,3,4,1,2,3,4] == [3,4,1,2,3,4]
 dropWhile :: (a -> Bool) -> List a -> List a
-dropWhile p Nil         = Nil
-dropWhile p (Cons x xs) = if' (p x) (Cons x xs) (dropWhile p xs)
+dropWhile p Nil           = Nil
+dropWhile p l@(Cons x xs) = if' (p x) (dropWhile p xs) l
 
 -- Разбить список по предикату на (takeWhile p xs, dropWhile p xs),
 -- но эффективнее
@@ -122,12 +122,31 @@ reverse (Cons x xs) = append (reverse xs) x
 
 -- (*) Все подсписки данного списка
 subsequences :: List a -> List (List a)
-subsequences Nil = Cons Nil Nil
+subsequences Nil         = Cons Nil Nil
 subsequences (Cons x xs) = subsequences xs ++ map (Cons x) (subsequences xs)
 
 -- (*) Все перестановки элементов данного списка
+
+-- Вспомогательные функции
+-- Вставить в список элемент на заданную позицию
+insertInto :: List a -> a -> Nat -> List a
+insertInto Nil val _                = Cons val Nil
+insertInto l val Zero               = Cons val l
+insertInto (Cons x xs) val (Succ n) = Cons x $ insertInto xs val n
+
+-- Вставить во все списки элемент на заданную позицию
+insertIntoAll :: List (List a) -> a -> Nat -> List (List a)
+insertIntoAll lists val n = map (\list -> insertInto list val n) lists
+
+-- natList n = [n - 1 .. 0]
+natList :: Nat -> List Nat
+natList Zero     = Nil
+natList (Succ n) = Cons n $ natList n
+
 permutations :: List a -> List (List a)
-permutations = undefined
+permutations Nil           = Cons Nil Nil
+permutations l@(Cons x xs) = let indexes = natList $ length l; perms = permutations xs in 
+                                concatMap (insertIntoAll perms x) indexes
 
 -- (*) Если можете. Все перестановки элементов данного списка
 -- другим способом

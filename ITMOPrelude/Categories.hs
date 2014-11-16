@@ -58,6 +58,10 @@ instance Monad List where
 instance Functor Tree where
     fmap = treeMap
 
+instance Category (->) where
+    id x = x
+    f . g = \x -> f $ g x
+
 --------------------------------------------------------------------------------
 -- Монада State
 

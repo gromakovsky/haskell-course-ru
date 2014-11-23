@@ -46,3 +46,12 @@ test3 = getNat >>= \x -> case x of Zero -> setExitCode natOne
 
 testGetMaybeRW = RealWorld Nil Nil natZero
 test4 = runState getMaybeNat testGetMaybeRW
+
+readListNat :: IO (List Nat)
+readListNat = getMaybeNat >>= \x -> case x of Nothing -> return Nil
+                                              Just n  -> fmap (Cons n) readListNat
+
+readListNatAndPrint :: IO ()
+readListNatAndPrint = getMaybeNat >>= \x -> case x of Nothing -> return ()
+                                                      Just n  -> putNat n >> readListNatAndPrint
+

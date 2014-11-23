@@ -18,6 +18,11 @@ type IO a = State RealWorld a
 getNat :: IO Nat
 getNat = State $ \rw -> let RealWorld (Cons x xs) out exit = rw in (RealWorld xs out exit, x)
 
+getMaybeNat :: IO (Maybe Nat)
+getMaybeNat = State $ \rw -> let RealWorld input output exit = rw in
+                                case input of Nil -> (RealWorld Nil output exit, Nothing)
+                                              _   -> runState (fmap Just getNat) rw
+
 putNat :: Nat -> IO ()
 putNat x = State $ \rw -> let RealWorld input output exit = rw in (RealWorld input (output `append` x) exit, ())
 
@@ -39,3 +44,5 @@ test3 :: IO ()
 test3 = getNat >>= \x -> case x of Zero -> setExitCode natOne
                                    _    -> (putNat $ prev x) >> setExitCode natZero
 
+testGetMaybeRW = RealWorld Nil Nil natZero
+test4 = runState getMaybeNat testGetMaybeRW

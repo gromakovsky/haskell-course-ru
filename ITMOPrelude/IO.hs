@@ -3,7 +3,8 @@ module ITMOPrelude.IO where
 
 import ITMOPrelude.Primitive
 import ITMOPrelude.List
-import ITMOPrelude.Categories
+import ITMOPrelude.Categories hiding ((.))
+import ITMOPrelude.Categories.FromMonad
 
 import Prelude (Show)
 
@@ -22,4 +23,19 @@ putNat x = State $ \rw -> let RealWorld input output exit = rw in (RealWorld inp
 
 setExitCode :: Nat -> IO ()
 setExitCode x = State $ \rw -> let RealWorld input output _ = rw in (RealWorld input output x, ())
+
+testRealWorld = RealWorld testList Nil undefined
+-- read number and write incremented, setting exit code to zero
+test1 :: IO ()
+test1 = fmap Succ getNat >>= putNat >> setExitCode natZero
+
+-- another way to do it
+test2 :: IO ()
+test2 = getNat >>= (putNat . Succ) >> setExitCode natZero
+
+-- read number and write decrement, but if it is zero don't print anything, just set return code 1
+testRealWorld2 = RealWorld (Cons natZero testList) Nil undefined
+test3 :: IO ()
+test3 = getNat >>= \x -> case x of Zero -> setExitCode natOne
+                                   _    -> (putNat $ prev x) >> setExitCode natZero
 

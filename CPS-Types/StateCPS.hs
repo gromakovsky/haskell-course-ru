@@ -8,7 +8,7 @@ newtype State' s a = State' {runState' :: forall r . s -> (s -> a -> r) -> r}
 newtype State'' s a = State'' {runState'' :: forall r . ((s -> (s, a)) -> r) -> r}
 
 caseState' :: (State' s a) -> ((s -> (s, a)) -> r) -> r
-caseState' = \x -> \f -> f (\s -> runState' x s (\s -> \a -> (s, a)))
+caseState' = \x -> \f -> f $ \s -> runState' x s (\s -> \a -> (s, a))
 
 caseState'' :: (State'' s a) -> ((s -> (s, a)) -> r) -> r
 caseState'' = \x -> \f -> runState'' x f
@@ -37,7 +37,7 @@ instance Applicative (State'' s) where
 
 instance Monad (State' s) where
     return a = state' $ \s -> (s, a)
-    sa >>= f = State' $ \s -> \g -> caseState' sa (\st -> let (s', a) = st s in runState' (f a) s' g)
+    sa >>= f = State' $ \s -> \g -> caseState' sa (\sta -> let (s', a) = sta s in runState' (f a) s' g)
 
 instance Monad (State'' s) where
     return a = state'' $ \s -> (s, a)

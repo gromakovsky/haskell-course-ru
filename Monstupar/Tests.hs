@@ -2,11 +2,12 @@ module Monstupar.Tests where
 
 import Monstupar.Core
 import Monstupar.Derived
+import Data.Char
 
 --------------------------------------------------------------------------------
 -- В помощь хозяйке
 
-mustParse s p = case runParser p s of
+mustParse s p = case runMonstupar p s of
     Left  _ -> False
     Right _ -> True
 
@@ -38,8 +39,28 @@ balParTest = mustParse ""
 
 -- Список натуральных чисел
 -- тут следует использовать класс Read
+
+natNumber :: Monstupar Char Integer
+natNumber = do
+    digits <- many1 $ like isDigit
+    return $ read digits
+
+natNumberTest = mustFail "a"
+            &.& mustParse "13"
+            &.& mustParse "2435435"
+            &.& mustFail ""
+            $ natNumber
+
 natList :: Monstupar Char [Integer]
-natList = undefined
+natList = (do
+    x <- natNumber
+    xs <- many patak
+    eof
+    return $ x:xs) where
+        patak = do
+            char ','
+            n <- natNumber
+            return n
 
 natListTest = mustFail  ""
           &.& mustParse "0"

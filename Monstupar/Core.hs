@@ -2,7 +2,7 @@
 -- combinator library
 module Monstupar.Core
     ( ParseError(..)
-    , Monstupar, runParser
+    , Monstupar, runMonstupar
     , ok, isnot, eof, (<|>), like
     ) where
 
@@ -10,14 +10,14 @@ module Monstupar.Core
 -- Определения
 
 -- Тело этого определения можно заменить на всё, что захочется
-data ParseError = ParseError
+data ParseError = ParseError String | ShouldNotParse | EOFExpected
                 deriving (Show) -- лишь бы show был
 
-newtype Monstupar s a = Monstupar { runParser :: [s] -> Either ParseError ([s], a) }
+newtype Monstupar s a = Monstupar { runMonstupar :: [s] -> Either ParseError ([s], a) }
 
 instance Monad (Monstupar s) where
-    return a = Monstupar $ \s -> Right (s , a)
-    ma >>= f = undefined
+    return a = Monstupar $ \xs -> Right (xs, a)
+    ma >>= f = Monstupar $ \xs -> runMonstupar ma xs >>= (\(xs, a) -> runMonstupar (f a) xs)
 
 --------------------------------------------------------------------------------
 -- Примитивные парсеры.
@@ -25,28 +25,33 @@ instance Monad (Monstupar s) where
 
 -- Всё хорошо
 ok :: Monstupar s ()
-ok = Monstupar $ \s -> Right (s , ())
+ok = return ()
+--ok = Monstupar $ \s -> Right (s , ())
 
 -- Не должно парситься парсером p
 isnot :: Monstupar s () -> Monstupar s ()
-isnot p = Monstupar $ \s -> case runParser p s of
-    Left e -> Right (s , ())
-    Right _ -> Left ParseError
+isnot p = Monstupar $ \xs -> case runMonstupar p xs of (Left _) -> Right (xs, ())
+                                                       (Right _) -> Left ShouldNotParse
 
 -- Конец ввода
 eof :: Monstupar s ()
-eof = Monstupar $ \s -> case s of
-    [] -> Right (s , ())
-    _  -> Left ParseError
+eof = Monstupar next where
+    next [] = Right ([], ())
+    next _  = Left EOFExpected
 
 infixr 2 <|>
 -- Сначала первый парсер, если он фейлится, то второй
 (<|>) :: Monstupar s a -> Monstupar s a -> Monstupar s a
-a <|> b = Monstupar $ \s -> undefined
+p1 <|> p2 = Monstupar $ \xs -> case runMonstupar p1 xs of res@(Right _) -> res
+                                                          (Left _) -> runMonstupar p2 xs
+
 
 -- В голове ввода сейчас нечто, удовлетворяющее p
 like :: (s -> Bool) -> Monstupar s s
-like p = Monstupar $ \s -> undefined
+like p = Monstupar next where
+    next [] = Left $ ParseError "Expected something like something but EOF found"
+    next (x:xs) | p x = Right (xs, x)
+                | otherwise = Left $ ParseError "Like didn't match"
 
 -- Сюда можно добавлять ещё какие-то примитивные парсеры
 -- если они понадобятся
